@@ -115,24 +115,4 @@ export function renderNotation(
     }
   }
 
-  // Style the SVG
-  const svg = container.querySelector('svg');
-  if (svg) {
-    svg.style.background = 'transparent';
-    // Make all notation elements light colored for dark theme
-    const paths = svg.querySelectorAll('path, line, rect');
-    paths.forEach((el) => {
-      const htmlEl = el as SVGElement;
-      if (htmlEl.getAttribute('fill') !== 'none') {
-        htmlEl.setAttribute('fill', '#e2e8f0');
-      }
-      if (htmlEl.getAttribute('stroke')) {
-        htmlEl.setAttribute('stroke', '#e2e8f0');
-      }
-    });
-    const texts = svg.querySelectorAll('text');
-    texts.forEach((el) => {
-      el.setAttribute('fill', '#e2e8f0');
-    });
-  }
 }

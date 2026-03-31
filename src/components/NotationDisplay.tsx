@@ -38,18 +38,18 @@ export function NotationDisplay({ bars, clef, octaveShift, trackName }: Notation
   }, [bars, clef, octaveShift]);
 
   return (
-    <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-          <h3 className="font-medium text-slate-200">{trackName}</h3>
+          <h3 className="font-medium text-slate-800">{trackName}</h3>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="bg-slate-700/50 px-2.5 py-1 rounded-full capitalize">
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span className="bg-slate-100 px-2.5 py-1 rounded-full capitalize">
             {clef} clef
           </span>
           {octaveShift !== 0 && (
-            <span className="bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full">
+            <span className="bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full">
               {octaveShift > 0 ? '+' : ''}{octaveShift} octave{Math.abs(octaveShift) !== 1 ? 's' : ''}
             </span>
           )}
