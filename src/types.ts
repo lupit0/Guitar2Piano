@@ -41,3 +41,9 @@ export interface ParsedScore {
   tracks: TrackData[];
   tempo: number;
 }
+
+export interface GrandStaffSettings {
+  enabled: boolean;
+  trebleTrackIndex: number;
+  bassTrackIndex: number;
+}

@@ -2,10 +2,11 @@ import { useState, useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { TrackControls } from './components/TrackControls';
 import { NotationDisplay } from './components/NotationDisplay';
+import { GrandStaffDisplay } from './components/GrandStaffDisplay';
 import { ScoreHeader } from './components/ScoreHeader';
 import { Toolbar } from './components/Toolbar';
 import { parseGuitarProFile } from './gpParser';
-import type { ParsedScore, TrackSettings } from './types';
+import type { ParsedScore, TrackSettings, GrandStaffSettings } from './types';
 
 function App() {
   const [score, setScore] = useState<ParsedScore | null>(null);
@@ -14,6 +15,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [barsPerRow, setBarsPerRow] = useState(4);
+  const [grandStaff, setGrandStaff] = useState<GrandStaffSettings>({
+    enabled: false,
+    trebleTrackIndex: 0,
+    bassTrackIndex: 1,
+  });
 
   const handleFileLoaded = useCallback((data: Uint8Array, fileName: string) => {
     setIsLoading(true);
@@ -55,6 +61,10 @@ function App() {
     },
     []
   );
+
+  const availableTracks = score?.tracks
+    .filter((t) => !t.isPercussion)
+    .map((t) => ({ index: t.index, name: t.name })) ?? [];
 
   const enabledTracks = score?.tracks.filter(
     (t) => trackSettings.get(t.index)?.enabled && !t.isPercussion
@@ -143,7 +153,21 @@ function App() {
               </button>
             </div>
 
-            <Toolbar barsPerRow={barsPerRow} onBarsPerRowChange={setBarsPerRow} />
+            <Toolbar
+              barsPerRow={barsPerRow}
+              onBarsPerRowChange={setBarsPerRow}
+              grandStaffEnabled={grandStaff.enabled}
+              onGrandStaffToggle={(enabled) => setGrandStaff((prev) => ({ ...prev, enabled }))}
+              trebleTrackIndex={grandStaff.trebleTrackIndex}
+              bassTrackIndex={grandStaff.bassTrackIndex}
+              onTrebleTrackChange={(trebleTrackIndex) =>
+                setGrandStaff((prev) => ({ ...prev, trebleTrackIndex }))
+              }
+              onBassTrackChange={(bassTrackIndex) =>
+                setGrandStaff((prev) => ({ ...prev, bassTrackIndex }))
+              }
+              availableTracks={availableTracks}
+            />
 
             <div className="grid grid-cols-12 gap-6">
               {/* Track list sidebar */}
@@ -177,7 +201,31 @@ function App() {
 
               {/* Notation display */}
               <div className="col-span-12 lg:col-span-8 space-y-4">
-                {enabledTracks && enabledTracks.length > 0 ? (
+                {grandStaff.enabled && availableTracks.length >= 2 ? (
+                  (() => {
+                    const trebleTrack = score!.tracks.find(
+                      (t) => t.index === grandStaff.trebleTrackIndex
+                    );
+                    const bassTrack = score!.tracks.find(
+                      (t) => t.index === grandStaff.bassTrackIndex
+                    );
+                    const trebleSettings = trackSettings.get(grandStaff.trebleTrackIndex);
+                    const bassSettings = trackSettings.get(grandStaff.bassTrackIndex);
+                    if (!trebleTrack || !bassTrack) return null;
+                    return (
+                      <GrandStaffDisplay
+                        key={`gs-${grandStaff.trebleTrackIndex}-${grandStaff.bassTrackIndex}-${trebleSettings?.octaveShift}-${bassSettings?.octaveShift}`}
+                        trebleBars={trebleTrack.bars}
+                        bassBars={bassTrack.bars}
+                        trebleOctaveShift={trebleSettings?.octaveShift ?? 0}
+                        bassOctaveShift={bassSettings?.octaveShift ?? 0}
+                        trebleTrackName={trebleTrack.name}
+                        bassTrackName={bassTrack.name}
+                        barsPerRow={barsPerRow}
+                      />
+                    );
+                  })()
+                ) : enabledTracks && enabledTracks.length > 0 ? (
                   enabledTracks
                     .filter((t) => t.index === selectedTrack || enabledTracks.length <= 2)
                     .map((track) => {
