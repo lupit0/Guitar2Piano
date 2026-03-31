@@ -37,8 +37,42 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
   const pageHeight = 297;
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
+  const headerHeight = 20;
 
-  // Create offscreen container
+  const totalBars =
+    options.mode === 'grandStaff'
+      ? Math.max(options.trebleBars.length, options.bassBars.length)
+      : options.bars.length;
+
+  if (totalBars === 0) return;
+
+  // Title on first page
+  pdf.setFontSize(18);
+  pdf.text(options.title, pageWidth / 2, margin + 8, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.text(options.artist, pageWidth / 2, margin + 14, { align: 'center' });
+  pdf.setFontSize(9);
+  pdf.text(`Tempo: ${options.tempo} BPM`, pageWidth / 2, margin + 19, { align: 'center' });
+
+  // The first page reserves one row for the header; subsequent pages use the full rowsPerPage.
+  const firstPageRowCount = Math.max(1, options.rowsPerPage - 1);
+  const firstPageBars = options.barsPerRow * firstPageRowCount;
+  const otherPagesBars = options.barsPerRow * options.rowsPerPage;
+
+  // Build page slices: each entry describes which bars go on that page.
+  const pageSlices: Array<{ start: number; end: number; contentY: number }> = [];
+  let barOffset = 0;
+  let pageIndex = 0;
+  while (barOffset < totalBars) {
+    const barsThisPage = pageIndex === 0 ? firstPageBars : otherPagesBars;
+    const end = Math.min(barOffset + barsThisPage, totalBars);
+    const contentY = pageIndex === 0 ? margin + headerHeight : margin;
+    pageSlices.push({ start: barOffset, end, contentY });
+    barOffset = end;
+    pageIndex++;
+  }
+
+  // Create offscreen container once and reuse it across pages.
   const offscreen = document.createElement('div');
   offscreen.style.position = 'absolute';
   offscreen.style.left = '-9999px';
@@ -49,98 +83,60 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
   document.body.appendChild(offscreen);
 
   try {
-    // Render the full score offscreen
-    if (options.mode === 'grandStaff') {
-      renderGrandStaff(
-        offscreen,
-        options.trebleBars,
-        options.bassBars,
-        options.trebleOctaveShift,
-        options.bassOctaveShift,
-        options.barsPerRow
-      );
-    } else {
-      renderNotation(
-        offscreen,
-        options.bars,
-        options.clef,
-        options.octaveShift,
-        options.barsPerRow
-      );
-    }
-
-    const svgElement = offscreen.querySelector('svg');
-    if (!svgElement) return;
-
-    // Get SVG dimensions
-    const svgW = parseFloat(svgElement.getAttribute('width') || '0');
-    const svgH = parseFloat(svgElement.getAttribute('height') || '0');
-    if (svgW === 0 || svgH === 0) return;
-
-    // Calculate how many bars and rows we have
-    const totalBars = options.mode === 'grandStaff'
-      ? Math.max(options.trebleBars.length, options.bassBars.length)
-      : options.bars.length;
-    const totalRows = Math.ceil(totalBars / options.barsPerRow);
-    const rowHeightPx = svgH / totalRows;
-
-    // Scale: how tall is one row in mm?
-    const scale = contentWidth / svgW;
-    const rowHeightMm = rowHeightPx * scale;
-
-    // Title block height
-    const headerHeight = 20;
-
-    let currentY = margin;
-    let currentPage = 1;
-    let rowsOnCurrentPage = 0;
-    const isFirstPage = () => currentPage === 1;
-
-    // Title on first page
-    pdf.setFontSize(18);
-    pdf.text(options.title, pageWidth / 2, currentY + 8, { align: 'center' });
-    pdf.setFontSize(12);
-    pdf.text(options.artist, pageWidth / 2, currentY + 14, { align: 'center' });
-    pdf.setFontSize(9);
-    pdf.text(`Tempo: ${options.tempo} BPM`, pageWidth / 2, currentY + 19, { align: 'center' });
-    currentY += headerHeight;
-
-    for (let row = 0; row < totalRows; row++) {
-      // Check if we need a new page
-      const maxRows = isFirstPage() ? options.rowsPerPage - 1 : options.rowsPerPage;
-      if (rowsOnCurrentPage >= maxRows || currentY + rowHeightMm > pageHeight - margin) {
-        // Page number
+    for (let p = 0; p < pageSlices.length; p++) {
+      if (p > 0) {
+        // Page number on the bottom of the completed page before adding a new one
         pdf.setFontSize(8);
-        pdf.text(`${currentPage}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+        pdf.text(`${p}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
         pdf.addPage();
-        currentPage++;
-        currentY = margin;
-        rowsOnCurrentPage = 0;
       }
 
-      // Clone SVG and set viewBox to just this row
-      const rowSvg = svgElement.cloneNode(true) as SVGSVGElement;
-      const clipY = row * rowHeightPx;
-      rowSvg.setAttribute('viewBox', `0 ${clipY} ${svgW} ${rowHeightPx}`);
-      rowSvg.removeAttribute('width');
-      rowSvg.removeAttribute('height');
+      const { start, end, contentY } = pageSlices[p];
 
-      await pdf.svg(rowSvg, {
+      // Render only the bars for this page — O(barsThisPage) work per page.
+      if (options.mode === 'grandStaff') {
+        renderGrandStaff(
+          offscreen,
+          options.trebleBars.slice(start, end),
+          options.bassBars.slice(start, end),
+          options.trebleOctaveShift,
+          options.bassOctaveShift,
+          options.barsPerRow
+        );
+      } else {
+        renderNotation(
+          offscreen,
+          options.bars.slice(start, end),
+          options.clef,
+          options.octaveShift,
+          options.barsPerRow
+        );
+      }
+
+      const svgElement = offscreen.querySelector('svg');
+      if (!svgElement) continue;
+
+      const svgW = parseFloat(svgElement.getAttribute('width') || '0');
+      const svgH = parseFloat(svgElement.getAttribute('height') || '0');
+      if (svgW === 0 || svgH === 0) continue;
+
+      const scale = contentWidth / svgW;
+      const svgHeightMm = svgH * scale;
+      const availableHeight = pageHeight - contentY - margin;
+
+      // pdf.svg() is called once per page (not once per row), keeping work O(N) total.
+      await pdf.svg(svgElement, {
         x: margin,
-        y: currentY,
+        y: contentY,
         width: contentWidth,
-        height: rowHeightMm,
+        height: Math.min(svgHeightMm, availableHeight),
       });
-
-      currentY += rowHeightMm + 2;
-      rowsOnCurrentPage++;
     }
 
-    // Last page number
+    // Page number on the last page
     pdf.setFontSize(8);
-    pdf.text(`${currentPage}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    pdf.text(`${pageSlices.length}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
 
-    // Save
     const filename = `${options.title.replace(/[^a-zA-Z0-9]/g, '_')}_piano.pdf`;
     pdf.save(filename);
   } finally {
