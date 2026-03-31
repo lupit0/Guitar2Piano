@@ -6,6 +6,8 @@ import { GrandStaffDisplay } from './components/GrandStaffDisplay';
 import { ScoreHeader } from './components/ScoreHeader';
 import { Toolbar } from './components/Toolbar';
 import { parseGuitarProFile } from './gpParser';
+import { exportToPdf } from './pdfExport';
+import type { PdfExportOptions } from './pdfExport';
 import type { ParsedScore, TrackSettings, GrandStaffSettings } from './types';
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
     trebleTrackIndex: 0,
     bassTrackIndex: 1,
   });
+  const [rowsPerPage, setRowsPerPage] = useState(4);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleFileLoaded = useCallback((data: Uint8Array, fileName: string) => {
     setIsLoading(true);
@@ -65,6 +69,52 @@ function App() {
   const availableTracks = score?.tracks
     .filter((t) => !t.isPercussion)
     .map((t) => ({ index: t.index, name: t.name })) ?? [];
+
+  const handleExportPdf = useCallback(async () => {
+    if (!score) return;
+    setIsExporting(true);
+    try {
+      let options: PdfExportOptions;
+      if (grandStaff.enabled && availableTracks.length >= 2) {
+        const trebleTrack = score.tracks.find((t) => t.index === grandStaff.trebleTrackIndex);
+        const bassTrack = score.tracks.find((t) => t.index === grandStaff.bassTrackIndex);
+        if (!trebleTrack || !bassTrack) return;
+        const trebleSettings = trackSettings.get(grandStaff.trebleTrackIndex);
+        const bassSettings = trackSettings.get(grandStaff.bassTrackIndex);
+        options = {
+          mode: 'grandStaff',
+          title: score.title,
+          artist: score.artist,
+          tempo: score.tempo,
+          barsPerRow,
+          rowsPerPage,
+          trebleBars: trebleTrack.bars,
+          bassBars: bassTrack.bars,
+          trebleOctaveShift: trebleSettings?.octaveShift ?? 0,
+          bassOctaveShift: bassSettings?.octaveShift ?? 0,
+        };
+      } else {
+        const track = score.tracks.find((t) => t.index === selectedTrack);
+        if (!track) return;
+        const settings = trackSettings.get(selectedTrack);
+        options = {
+          mode: 'single',
+          title: score.title,
+          artist: score.artist,
+          tempo: score.tempo,
+          barsPerRow,
+          rowsPerPage,
+          bars: track.bars,
+          clef: settings?.clef ?? 'treble',
+          octaveShift: settings?.octaveShift ?? 0,
+          trackName: track.name,
+        };
+      }
+      await exportToPdf(options);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [score, grandStaff, availableTracks, trackSettings, selectedTrack, barsPerRow, rowsPerPage]);
 
   const enabledTracks = score?.tracks.filter(
     (t) => trackSettings.get(t.index)?.enabled && !t.isPercussion
@@ -167,6 +217,10 @@ function App() {
                 setGrandStaff((prev) => ({ ...prev, bassTrackIndex }))
               }
               availableTracks={availableTracks}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={setRowsPerPage}
+              onExportPdf={handleExportPdf}
+              isExporting={isExporting}
             />
 
             <div className="grid grid-cols-12 gap-6">
