@@ -21,15 +21,16 @@ export function renderNotation(
   container: HTMLElement,
   bars: PianoBar[],
   clef: ClefType,
-  octaveShift: number
+  octaveShift: number,
+  barsPerRow: number = 4
 ): void {
   container.innerHTML = '';
 
   if (bars.length === 0) return;
 
-  const staveWidth = 300;
   const staveHeight = 140;
-  const stavesPerRow = Math.max(1, Math.floor((container.clientWidth - 40) / staveWidth));
+  const stavesPerRow = barsPerRow;
+  const staveWidth = Math.floor((container.clientWidth - 40) / stavesPerRow);
   const totalRows = Math.ceil(bars.length / stavesPerRow);
   const svgWidth = Math.min(container.clientWidth, stavesPerRow * staveWidth + 40);
   const svgHeight = totalRows * staveHeight + 40;

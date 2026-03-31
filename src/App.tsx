@@ -3,6 +3,7 @@ import { FileUpload } from './components/FileUpload';
 import { TrackControls } from './components/TrackControls';
 import { NotationDisplay } from './components/NotationDisplay';
 import { ScoreHeader } from './components/ScoreHeader';
+import { Toolbar } from './components/Toolbar';
 import { parseGuitarProFile } from './gpParser';
 import type { ParsedScore, TrackSettings } from './types';
 
@@ -12,6 +13,7 @@ function App() {
   const [selectedTrack, setSelectedTrack] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [barsPerRow, setBarsPerRow] = useState(4);
 
   const handleFileLoaded = useCallback((data: Uint8Array, fileName: string) => {
     setIsLoading(true);
@@ -141,6 +143,8 @@ function App() {
               </button>
             </div>
 
+            <Toolbar barsPerRow={barsPerRow} onBarsPerRowChange={setBarsPerRow} />
+
             <div className="grid grid-cols-12 gap-6">
               {/* Track list sidebar */}
               <div className="col-span-12 lg:col-span-4 space-y-3">
@@ -185,6 +189,7 @@ function App() {
                           clef={settings.clef}
                           octaveShift={settings.octaveShift}
                           trackName={track.name}
+                          barsPerRow={barsPerRow}
                         />
                       );
                     })

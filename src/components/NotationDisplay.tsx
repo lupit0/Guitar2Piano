@@ -7,9 +7,10 @@ interface NotationDisplayProps {
   clef: ClefType;
   octaveShift: number;
   trackName: string;
+  barsPerRow: number;
 }
 
-export function NotationDisplay({ bars, clef, octaveShift, trackName }: NotationDisplayProps) {
+export function NotationDisplay({ bars, clef, octaveShift, trackName, barsPerRow }: NotationDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,24 +19,24 @@ export function NotationDisplay({ bars, clef, octaveShift, trackName }: Notation
     // Small delay to ensure container is measured
     const timer = requestAnimationFrame(() => {
       if (containerRef.current) {
-        renderNotation(containerRef.current, bars, clef, octaveShift);
+        renderNotation(containerRef.current, bars, clef, octaveShift, barsPerRow);
       }
     });
 
     return () => cancelAnimationFrame(timer);
-  }, [bars, clef, octaveShift]);
+  }, [bars, clef, octaveShift, barsPerRow]);
 
   // Re-render on window resize
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && bars.length > 0) {
-        renderNotation(containerRef.current, bars, clef, octaveShift);
+        renderNotation(containerRef.current, bars, clef, octaveShift, barsPerRow);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [bars, clef, octaveShift]);
+  }, [bars, clef, octaveShift, barsPerRow]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
