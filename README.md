@@ -1,73 +1,50 @@
-# React + TypeScript + Vite
+# Guitar2Piano
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Convert Guitar Pro files into piano sheet music, right in your browser.
 
-Currently, two official plugins are available:
+**Live demo:** [lupit0.github.io/Guitar2Piano](https://lupit0.github.io/Guitar2Piano)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Guitar Pro import** — Drag and drop `.gp`, `.gp3`, `.gp4`, `.gp5`, `.gpx` files
+- **Multi-track support** — View and switch between all tracks in the file
+- **Grand Staff mode** — Combine two tracks into a proper piano grand staff with brace, connected barlines, and independent treble/bass clef assignment
+- **Bars per row** — Adjustable layout (1-6 bars per row) to control notation density
+- **Octave shifting** — Transpose any track up or down by octaves
+- **PDF export** — Vector-quality PDF output with configurable rows per page, title header, and page numbers
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Usage
 
-## Expanding the ESLint configuration
+1. Open the app and upload a Guitar Pro file
+2. Select which tracks to display and adjust clef/octave settings
+3. Use the toolbar to set bars per row
+4. Toggle **Grand Staff** to combine two tracks into a piano grand staff — pick which track is treble (top) and which is bass (bottom)
+5. Click **Export PDF** to download print-ready sheet music
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- [React](https://react.dev/) + TypeScript
+- [VexFlow](https://www.vexflow.com/) — Music notation rendering
+- [AlphaTab](https://www.alphatab.net/) — Guitar Pro file parsing
+- [jsPDF](https://github.com/parallax/jsPDF) + [svg2pdf.js](https://github.com/yWorks/svg2pdf.js) — Vector PDF export
+- [Tailwind CSS](https://tailwindcss.com/) — Styling
+- [Vite](https://vite.dev/) — Build tool
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Development
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Build & Deploy
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+Deployed automatically to GitHub Pages via GitHub Actions on push to `master`.
+
+## License
+
+MIT
